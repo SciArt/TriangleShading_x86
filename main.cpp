@@ -6,6 +6,8 @@
 #include <iomanip>
 #include <cmath>
 
+#include <thread>
+
 using ns = std::chrono::nanoseconds;
 using ms = std::chrono::milliseconds;
 using get_time = std::chrono::steady_clock;
@@ -15,8 +17,8 @@ int height = 600;
 
 struct verticle
 {
-	int x, y;
-	char r,g,b,a;
+	float x,y,z,w; // Coords
+	float r,g,b,a; // Colors
 };
 
 struct verticle_float
@@ -68,7 +70,7 @@ void drawTriangle( sf::Uint8* pixels, verticle* verticles )
 	d13.x = float(v3.x - v1.x)/(v3.y - v1.y);
 	
 	// Początek i koniec odcinka
-	verticle_float Vb, Ve;
+	verticle Vb, Ve;
 	Vb.x = v1.x;
 	Vb.y = v1.y;
 	Ve = Vb;
@@ -160,559 +162,51 @@ void drawTriangle( sf::Uint8* pixels, verticle* verticles )
 	}
 	// 4. Koniec
 }
-void drawTriangle_bersenham2( sf::Uint8* pixels, verticle* verticles )
-{
-	verticle v1 = verticles[0];
-	verticle v2 = verticles[1];
-	verticle v3 = verticles[2];
-	
-	// SORTOWANIE
-	if( v2.y < v1.y ) swap( v1, v2 );
-	if( v3.y < v1.y ) swap( v1, v3 );
-	if( v3.y < v2.y ) swap( v2, v3 );
-	
-	int eb, dxb, dyb, kxb, kyb;
-	int ee, dxe, dye, kxe, kye;
-	int xb, yb, xe, ye;
-	
-	// vB
-	if( v1.x < v3.x )
-	{
-		kxb = 1;
-		dxb = v3.x - v1.x;
-	}
-	else
-	{
-		kxb = -1;
-		dxb = v1.x - v3.x;
-	}
-	if( v1.y < v3.y )
-	{
-		kyb = 1;
-		dyb = v3.y - v1.y;
-	}
-	else
-	{
-		kyb = -1;
-		dyb = v1.y - v3.y;
-	}
-	
-	// vE
-	if( v1.x < v2.x )
-	{
-		kxe = 1;
-		dxe = v2.x - v1.x;
-	}
-	else
-	{
-		kxe = -1;
-		dxe = v1.x - v2.x;
-	}
-	if( v1.y < v2.y )
-	{
-		kye = 1;
-		dye = v2.y - v1.y;
-	}
-	else
-	{
-		kye = -1;
-		dye = v1.y - v2.y;
-	}
-	
-	xb = xe = v1.x;
-	yb = ye = v1.y;
-	
-	pixels[4*int(xb) + int(yb)*width*4 + 0] = 255;
-	pixels[4*int(xb) + int(yb)*width*4 + 1] = 0;
-	pixels[4*int(xb) + int(yb)*width*4 + 2] = 0;
-	pixels[4*int(xb) + int(yb)*width*4 + 3] = 255;
-	
-	if( dxb > dyb )
-		eb = dxb/2;
-	else
-		eb = dyb/2;
-	
-	if( dxe > dye )
-		ee = dxe/2;
-	else
-		ee = dye/2;
-	
-	while( yb < v2.y )
-	{
-		//std::cout << yb << "\n";
-		while( ee >= 0 )
-		{
-			if( dxe > dye )
-			{
-				xe += kxe;
-				ee -= dye;
-			}
-			else
-			{
-				ye += 1;
-				ee -= dxe;
-				break;
-			}
-		}
-		// ...
-		// Tutaj rysowanie linii poziomej?
-		if( xb < xe )
-		{
-			for( int i = xb; i <= xe; ++i )
-			{
-				pixels[4*i + int(yb)*width*4 + 0] = 255;
-				pixels[4*i + int(yb)*width*4 + 1] = 0;
-				pixels[4*i + int(yb)*width*4 + 2] = 0;
-				pixels[4*i + int(yb)*width*4 + 3] = 255;
-			}
-		}
-		else
-		{
-			for( int i = xe; i <= xb; ++i )
-			{
-				pixels[4*i + int(yb)*width*4 + 0] = 255;
-				pixels[4*i + int(yb)*width*4 + 1] = 0;
-				pixels[4*i + int(yb)*width*4 + 2] = 0;
-				pixels[4*i + int(yb)*width*4 + 3] = 255;
-			}
-		}
-		// ...
-		while( eb >= 0 )
-		{
-			if( dxb > dyb )
-			{
-				xb += kxb;
-				eb -= dyb;
-			}
-			else
-			{
-				yb += 1;
-				eb -= dxb;
-				break;
-			}
-		}
-		if( ee < 0 )
-		{
-			if( dxe > dye )
-			{
-				ye += 1;
-				ee += dxe;
-			}
-			else
-			{
-				xe += kxe;
-				ee += dye;
-			}
-		}
-		if( eb < 0 )
-		{
-			if( dxb > dyb )
-			{
-				yb += 1;
-				eb += dxb;
-			}
-			else
-			{
-				xb += kxb;
-				eb += dyb;
-			}
-		}
-		
-	}
-	
-	
-	// vE
-	if( v2.x < v3.x )
-	{
-		kxe = 1;
-		dxe = v3.x - v2.x;
-	}
-	else
-	{
-		kxe = -1;
-		dxe = v2.x - v3.x;
-	}
-	if( v2.y < v3.y )
-	{
-		kye = 1;
-		dye = v3.y - v2.y;
-	}
-	else
-	{
-		kye = -1;
-		dye = v2.y - v3.y;
-	}
-	
-	xe = v2.x;
-	ye = v2.y;
-	
-	if( dxe > dye )
-		ee = dxe/2;
-	else
-		ee = dye/2;
-	
-	while( yb < v3.y )
-	{
-		while( ee >= 0 )
-		{
-			if( dxe > dye )
-			{
-				xe += kxe;
-				ee -= dye;
-			}
-			else
-			{
-				ye += 1;
-				ee -= dxe;
-				break;
-			}
-		}
-		// ...
-		// Tutaj rysowanie linii poziomej?
-		if( xb < xe )
-		{
-			for( int i = xb; i <= xe; ++i )
-			{
-				pixels[4*i + int(yb)*width*4 + 0] = 0;
-				pixels[4*i + int(yb)*width*4 + 1] = 255;
-				pixels[4*i + int(yb)*width*4 + 2] = 0;
-				pixels[4*i + int(yb)*width*4 + 3] = 255;
-			}
-		}
-		else
-		{
-			for( int i = xe; i <= xb; ++i )
-			{
-				pixels[4*i + int(yb)*width*4 + 0] = 0;
-				pixels[4*i + int(yb)*width*4 + 1] = 255;
-				pixels[4*i + int(yb)*width*4 + 2] = 0;
-				pixels[4*i + int(yb)*width*4 + 3] = 255;
-			}
-		}
-		// ...
-		while( eb >= 0 )
-		{
-			if( dxb > dyb )
-			{
-				xb += kxb;
-				eb -= dyb;
-			}
-			else
-			{
-				yb += 1;
-				eb -= dxb;
-				break;
-			}
-		}
-		if( ee < 0 )
-		{
-			if( dxe > dye )
-			{
-				ye += 1;
-				ee += dxe;
-			}
-			else
-			{
-				xe += kxe;
-				ee += dye;
-			}
-		}
-		if( eb < 0 )
-		{
-			if( dxb > dyb )
-			{
-				yb += 1;
-				eb += dxb;
-			}
-			else
-			{
-				xb += kxb;
-				eb += dyb;
-			}
-		}
-		
-	}
-	pixels[4*int(xb) + int(yb)*width*4 + 0] = 0;
-	pixels[4*int(xb) + int(yb)*width*4 + 1] = 255;
-	pixels[4*int(xb) + int(yb)*width*4 + 2] = 0;
-	pixels[4*int(xb) + int(yb)*width*4 + 3] = 255;
-}
 
-void drawTriangle_bersenham( sf::Uint8* pixels, verticle* verticles )
+struct data
 {
-	verticle v1 = verticles[0];
-	verticle v2 = verticles[1];
-	verticle v3 = verticles[2];
-	
-	if( v2.y < v1.y ) swap( v1, v2 );
-	if( v3.y < v1.y ) swap( v1, v3 );
-	if( v3.y < v2.y ) swap( v2, v3 );
-	{
-	int x1 = v1.x;
-	int y1 = v1.y;
-	int x2 = v2.x;
-	int y2 = v2.y;
-	
-	// zmienne pomocnicze
-     int d, dx, dy, ai, bi, xi, yi;
-     int x = x1, y = y1;
-     // ustalenie kierunku rysowania
-     if (x1 < x2)
-     { 
-         xi = 1;
-         dx = x2 - x1;
-     } 
-     else
-     { 
-         xi = -1;
-         dx = x1 - x2;
-     }
-     // ustalenie kierunku rysowania
-     if (y1 < y2)
-     { 
-         yi = 1;
-         dy = y2 - y1;
-     } 
-     else
-     { 
-         yi = -1;
-         dy = y1 - y2;
-     }
-     // pierwszy piksel
-     pixels[4*int(x) + int(y)*width*4 + 0] = 255;
-	  pixels[4*int(x) + int(y)*width*4 + 1] = 255;
-	  pixels[4*int(x) + int(y)*width*4 + 2] = 255;
-	  pixels[4*int(x) + int(y)*width*4 + 3] = 255;
-     // oś wiodąca OX
-     if (dx > dy)
-     {
-         d = dx/2;
-         // pętla po kolejnych x
-         while (x != x2)
-         { 
-             // test współczynnika
-             x += xi;
-             d -= dy;
-             if( d < 0 )
-             {
-             	y += yi;
-             	d += dx;
-             }
-				  pixels[4*int(x) + int(y)*width*4 + 0] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 1] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 2] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 3] = 255;
-         }
-     } 
-     // oś wiodąca OY
-     else
-     { 
-         d = dy/2;
-         // pętla po kolejnych y
-         while (y != y2)
-         { 
-             y += yi;
-             d -= dx;
-             if( d < 0 )
-             {
-             	x += xi;
-             	d += dy;
-             }
-				  pixels[4*int(x) + int(y)*width*4 + 0] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 1] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 2] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 3] = 255;
-         }
-     }
-	}
-	
-	{
-	int x1 = v1.x;
-	int y1 = v1.y;
-	int x2 = v3.x;
-	int y2 = v3.y;
-	
-	// zmienne pomocnicze
-     int d, dx, dy, ai, bi, xi, yi;
-     int x = x1, y = y1;
-     // ustalenie kierunku rysowania
-     if (x1 < x2)
-     { 
-         xi = 1;
-         dx = x2 - x1;
-     } 
-     else
-     { 
-         xi = -1;
-         dx = x1 - x2;
-     }
-     // ustalenie kierunku rysowania
-     if (y1 < y2)
-     { 
-         yi = 1;
-         dy = y2 - y1;
-     } 
-     else
-     { 
-         yi = -1;
-         dy = y1 - y2;
-     }
-     // pierwszy piksel
-     pixels[4*int(x) + int(y)*width*4 + 0] = 255;
-	  pixels[4*int(x) + int(y)*width*4 + 1] = 255;
-	  pixels[4*int(x) + int(y)*width*4 + 2] = 255;
-	  pixels[4*int(x) + int(y)*width*4 + 3] = 255;
-     // oś wiodąca OX
-     if (dx > dy)
-     {
-         d = dx/2;
-         // pętla po kolejnych x
-         while (x != x2)
-         { 
-             // test współczynnika
-             x += xi;
-             d -= dy;
-             if( d < 0 )
-             {
-             	y += yi;
-             	d += dx;
-             }
-				  pixels[4*int(x) + int(y)*width*4 + 0] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 1] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 2] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 3] = 255;
-         }
-     } 
-     // oś wiodąca OY
-     else
-     { 
-         d = dy/2;
-         // pętla po kolejnych y
-         while (y != y2)
-         { 
-             y += yi;
-             d -= dx;
-             if( d < 0 )
-             {
-             	x += xi;
-             	d += dy;
-             }
-				  pixels[4*int(x) + int(y)*width*4 + 0] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 1] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 2] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 3] = 255;
-         }
-     }
-	}
-	
-	{
-	int x1 = v2.x;
-	int y1 = v2.y;
-	int x2 = v3.x;
-	int y2 = v3.y;
-	
-	// zmienne pomocnicze
-     int d, dx, dy, ai, bi, xi, yi;
-     int x = x1, y = y1;
-     // ustalenie kierunku rysowania
-     if (x1 < x2)
-     { 
-         xi = 1;
-         dx = x2 - x1;
-     } 
-     else
-     { 
-         xi = -1;
-         dx = x1 - x2;
-     }
-     // ustalenie kierunku rysowania
-     if (y1 < y2)
-     { 
-         yi = 1;
-         dy = y2 - y1;
-     } 
-     else
-     { 
-         yi = -1;
-         dy = y1 - y2;
-     }
-     // pierwszy piksel
-     pixels[4*int(x) + int(y)*width*4 + 0] = 255;
-	  pixels[4*int(x) + int(y)*width*4 + 1] = 255;
-	  pixels[4*int(x) + int(y)*width*4 + 2] = 255;
-	  pixels[4*int(x) + int(y)*width*4 + 3] = 255;
-     // oś wiodąca OX
-     if (dx > dy)
-     {
-         d = dx/2;
-         // pętla po kolejnych x
-         while (x != x2)
-         { 
-             // test współczynnika
-             x += xi;
-             d -= dy;
-             if( d < 0 )
-             {
-             	y += yi;
-             	d += dx;
-             }
-				  pixels[4*int(x) + int(y)*width*4 + 0] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 1] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 2] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 3] = 255;
-         }
-     } 
-     // oś wiodąca OY
-     else
-     { 
-         d = dy/2;
-         // pętla po kolejnych y
-         while (y != y2)
-         { 
-             y += yi;
-             d -= dx;
-             if( d < 0 )
-             {
-             	x += xi;
-             	d += dy;
-             }
-				  pixels[4*int(x) + int(y)*width*4 + 0] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 1] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 2] = 255;
-				  pixels[4*int(x) + int(y)*width*4 + 3] = 255;
-         }
-     }
-	}
-}
+	data( void* verticles, void* pixels, int width, int height ) 
+		: verticles(verticles), pixels(pixels), width(width), height(height) {}
+	void* verticles;
+	void* pixels;
+	int width;
+	int height;
+};
 
 int main()
 {
 	sf::RenderWindow window( sf::VideoMode(width, height), "Triangle shading | Gerard Wypych" );
+	
+	char mask[16] = {0,4,8,12,0,0,0,0,0,0,0,0,0,0,0,0};
 
 	verticle verticles[3];
 
 	verticles[0].x = 10;
 	verticles[0].y = 10;
+	verticles[0].z = 1;
+	verticles[0].w = 1;
 	verticles[0].r = 255;
 	verticles[0].g = 0;
-	verticles[0].b = 0;
-	verticles[0].a = 0;
+	verticles[0].b = 255;
+	verticles[0].a = 255;
 
 	verticles[1].x = 150;
 	verticles[1].y = 300;
+	verticles[1].z = 1;
+	verticles[1].w = 1;
 	verticles[1].r = 0;
 	verticles[1].g = 255;
 	verticles[1].b = 0;
-	verticles[1].a = 0;
+	verticles[1].a = 255;
 
 	verticles[2].x = 300;
 	verticles[2].y = 50;
+	verticles[2].z = 1;
+	verticles[2].w = 1;
 	verticles[2].r = 0;
 	verticles[2].g = 0;
 	verticles[2].b = 255;
-	verticles[2].a = 0;
-	
-	//sf::Uint8* pixels = new sf::Uint8[width * height * 4];
+	verticles[2].a = 255;
 
 	sf::Image* image = new sf::Image;
 	image->create( width, height, sf::Color::White );
@@ -727,7 +221,7 @@ int main()
 	auto start = get_time::now();
 	
 	while (window.isOpen())
-	{
+	{		
 		sf::Event event;
 		while (window.pollEvent(event))
 		{
@@ -747,8 +241,9 @@ int main()
 				delete sprite;
 				sprite = new sf::Sprite;
 				sprite->setTexture(texture);
+				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));;
 			}
-		}	
+		}
 		delete image;
 		image = new sf::Image;
 		image->create( width, height, sf::Color::White );
@@ -777,26 +272,25 @@ int main()
 		
 		start = get_time::now();
 
-		//drawGrid( (sf::Uint8*)image->getPixelsPtr() );
+		drawGrid( (sf::Uint8*)image->getPixelsPtr() );
 		
 		std::cout << "\033[2J\033[1;1HdrawGrid:         " << std::setw(20) << std::right << (std::chrono::duration_cast<ns>(get_time::now() - start)).count() << " ns\n";
 		
 		start = get_time::now();
 		
-		if( sf::Keyboard::isKeyPressed(sf::Keyboard::Num6) )
-			drawTriangle( (sf::Uint8*)image->getPixelsPtr(), verticles );
-		else
-			drawTriangle_bersenham2( (sf::Uint8*)image->getPixelsPtr(), verticles );
-		
-		if( sf::Keyboard::isKeyPressed(sf::Keyboard::Num4) )
-			drawTriangle_bersenham( (sf::Uint8*)image->getPixelsPtr(), verticles );		
-		std::cout << "drawTriangleCpp:  " << std::setw(20) << std::right << (std::chrono::duration_cast<ns>(get_time::now() - start)).count() << " ns\n";
-
-		start = get_time::now();
-		
-		x86_function( (sf::Uint8*)image->getPixelsPtr(), width, height, verticles );
+		//data* tmp = new data( verticles, (sf::Uint8*)image->getPixelsPtr(), width, height );
+		//if( sf::Keyboard::isKeyPressed(sf::Keyboard::Num5) )
+			x86_function( verticles, (sf::Uint8*)image->getPixelsPtr(), width, height, mask );
 
 		std::cout << "drawTriangle_x86: " << std::setw(20) << std::right << (std::chrono::duration_cast<ns>(get_time::now() - start)).count() << " ns\n";
+		
+		start = get_time::now();
+		
+		if( sf::Keyboard::isKeyPressed(sf::Keyboard::Num4) )
+		{
+			drawTriangle( (sf::Uint8*)image->getPixelsPtr(), verticles );
+		}	
+		std::cout << "drawTriangleCpp:  " << std::setw(20) << std::right << (std::chrono::duration_cast<ns>(get_time::now() - start)).count() << " ns\n";
 
 		texture.update(*image);
 		
@@ -807,8 +301,6 @@ int main()
 	
 	delete image;
 	delete sprite;
-
-	//delete[] pixels;
 	
 	return 0;
 }
