@@ -1,3 +1,5 @@
+; r8 - current y
+
 section .data
 	;mask: db 0, 4, 8, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	
@@ -131,6 +133,10 @@ sort_end:
 	vmovups		ymm2, [r11]		; v2, begin from [x]	
 	vmovups		ymm3, [r12]		; v3, begin from [x]
 	
+	vmovups		xmm10, [r10+4] ; v1, begin from [y]
+	vmovups		xmm11, [r11+4] ; v2, begin from [y]
+	vmovups		xmm12, [r12+4] ; v3, begin from [y]
+	
 	; coordinates
 	; r13, r14, r15 = y1, y2, y3
 	
@@ -141,9 +147,18 @@ sort_end:
 	%define v2 ymm2
 	%define v3 ymm3
 	
+	%define vy1 xmm10
+	%define vy2 xmm11
+	%define vy3 xmm12
+	
 	%define y1 r13
 	%define y2 r14
 	%define y3 r15
+	
+	%define y  r8
+	%define x  r9
+	mov y, 0
+	mov x, 0
 ;------------------------------------------------------------------------------
 	
 	; [2.0]	if v1.y is equal v3.y jump to the END
@@ -161,11 +176,15 @@ sort_end:
 	vsubps d13, v3, v1
 	
 	; y3 - y1
-	mov rax, y3
-	sub rax, y1
-	push rax
-	VBROADCASTSS ymm0, DWORD[rdi+8] ; filling vector with lower 32 bits of rax
-	pop rax
+	;mov rax, y3
+	;sub rax, y1
+	;push rax
+	;VBROADCASTSS ymm0, DWORD[rdi+8] ; filling vector with lower 32 bits of rax
+	;VCVTDQ2PS ymm0, ymm0 ; converting integers to floats
+	;pop rax
+	
+	vsubps xmm0, vy3, vy1
+	VBROADCASTSS ymm0, xmm0
 	
 	vdivps d13, d13, ymm0 ; v3-v1 / y3-y1
 	
@@ -185,31 +204,99 @@ first_stage:
 	vsubps d12, v2, v1
 	
 	; y2 - y1
-	mov rax, y2
-	sub rax, y1
-	push rax
-	VBROADCASTSS ymm0, DWORD[rdi+8] ; filling vector with lower 32 bits of rax
-	pop rax
+	;mov rax, y2
+	;sub rax, y1
+	;push rax
+	;VBROADCASTSS ymm0, DWORD[rdi+8] ; filling vector with lower 32 bits of rax
+	;VCVTDQ2PS ymm0, ymm0 ; converting integers to floats
+	;pop rax
+	
+	vsubps xmm0, vy2, vy1
+	VBROADCASTSS ymm0, xmm0
 	
 	vdivps d12, d12, ymm0 ; v2-v1 / y2-y1
 	
 	; [3.2]	FIRST STAGE of drawing
 	
+	mov y, y1
 	; [3.3]	while( y <= v2.y ) 
+first_stage_loop:
+	
 	; 		[3.3.0]	draw a line from begin to end
+	
+	; loading x values of begin and end
+	vcvtss2si	rax, xmm4 ; vB
+	vcvtss2si	rbx, xmm5 ; VE
+	
+	mov 	rcx, pixels
+	
+	; checking vB.x < vE.x
+	mov	x, rax
+	cmp	rax, rbx
+	jle	first_stage_drawing_line
+	mov	x, rbx
+	mov	rbx, rax
+	mov	rax, x
+	; x=rax is lower then rbx
+	
+first_stage_drawing_line:
+	mov 	rdx, width 		; width	
+	imul 	rdx, y			; width*y
+	add 	rdx, x			; width*y + x
+	imul 	rdx, 4			; 4*(width*y + x)
+	add	rdx, rcx
+	
+	;vcvtps2dq xmm0, c1
+	;pshufb xmm0, mask
+	;vmovd [rdx], xmm0
+	
+	;add rcx, 100
+	;mov BYTE[rcx], 0
+		
+	mov BYTE[rdx], 0
+	
+	inc x
+	
+	cmp x, rbx
+	jle first_stage_drawing_line
+	
 	;		[3.3.1]	calculate next line begin and end
+	VADDPS	vB, vB, d13
+	VADDPS	vE, vE, d12	
+	
+	inc	y
+	; contiune if y <= y2
+	cmp	y, y2
+	jle first_stage_loop
 ;------------------------------------------------------------------------------
 second_stage:
+
+	VMOVUPS vE, v2
 
 	; [4.0]	if v2.y is equal to v3.y jump to the END
 	cmp	y2, y3
 	je		end
 	
 	; [4.1]	calculating differences d23 (v2, v3)
+	; v3 - v2
+	vsubps d23, v3, v2
+	
+	; y3 - y2
+	;mov rax, y3
+	;sub rax, y2
+	;push rax
+	;VBROADCASTSS ymm0, DWORD[rdi+8] ; filling vector with lower 32 bits of rax
+	;VCVTDQ2PS ymm0, ymm0 ; converting integers to floats
+	;pop rax
+	
+	vsubps xmm0, vy3, vy2
+	VBROADCASTSS ymm0, xmm0
+	
+	vdivps d23, d23, ymm0 ; v3-v2 / y3-y2
 	
 	; [4.2]	SECOND STAGE of drawing
 	
-	; [4.3]	while( y <= v3.y ) 
+	; [4.3]	while( y <= v3.y )
 	; 		[4.3.0]	draw a line from begin to end
 	;		[4.3.1]	calculate next line begin and end
 	
@@ -235,6 +322,7 @@ second_stage:
 	
 ;------------------------------------------------------------------------------	
 end:
+
 	; free space - saved arguments
 	; 5 * 8 = 40 bytes (5 registers, rdi, rsi, rdx, rcx, r9 each 8 bytes)
 	add rsp, 40
