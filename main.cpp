@@ -179,7 +179,7 @@ int main()
 	sf::RenderWindow window( sf::VideoMode(width, height), "Triangle shading | Gerard Wypych" );
 	
 	char mask[16] = {0,4,8,12,0,0,0,0,0,0,0,0,0,0,0,0};
-	float ones[8] = {1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f};
+	//float ones[8] = {1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f};
 
 	verticle verticles[3];
 
@@ -391,7 +391,7 @@ int main()
 		
 		//data* tmp = new data( verticles, (sf::Uint8*)image->getPixelsPtr(), width, height );
 		//if( sf::Keyboard::isKeyPressed(sf::Keyboard::Num5) )
-			x86_function( verticles, (sf::Uint8*)image->getPixelsPtr(), width, height, mask, ones );
+			x86_function( verticles, (sf::Uint8*)image->getPixelsPtr(), width, height, mask );
 
 		std::cout << "drawTriangle_x86: " << std::setw(20) << std::right << (std::chrono::duration_cast<ns>(get_time::now() - start)).count() << " ns\n";
 		
