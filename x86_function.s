@@ -26,11 +26,14 @@ x86_function:
 	push rdx	; [rbp-72] width
 	push rcx	; [rbp-80] height
 	push r8	; [rbp-88] mask
+	push r9	; [rbp-96] vector of ones 8x32bits
 	
 	%define vertices [rbp-56]
 	%define pixels [rbp-64]
 	%define width [rbp-72]
 	%define height [rbp-80]
+	;%define mask [rbp-88]
+	%define ones [rbp-96]
 
 	vzeroall ; assigning zero to all ymm registers
 
@@ -230,15 +233,27 @@ first_stage_loop:
 	
 	mov 	rcx, pixels
 	
+	; for linear interpolation
+	VMOVUPS	ymm14, vB
+	VMOVUPS	ymm15, vE
+	
+	vsubps ymm13, ymm15, ymm14 ; vE - vB
+	VBROADCASTSS ymm0, xmm13 ; xE - xB
+	vdivps ymm13, ymm13, ymm0 ; vE-vB / xE-xB
+	
 	; checking vB.x < vE.x
+	VMOVUPS	ymm14, vB ; ymm14 is for xB
+	VMOVUPS	ymm15, vB ; ymm15 is for current x
 	mov	x, rax
 	cmp	rax, rbx
 	jle	first_stage_drawing_line
 	mov	x, rbx
 	mov	rbx, rax
 	mov	rax, x
-	; x=rax is lower then rbx
-	
+	VMOVUPS	ymm14, vE ; ymm14 is for xB
+	VMOVUPS	ymm15, vE ; ymm15 is for current x
+	; x=rax is lower then rbx ; rax = vB ; rbx = vE	
+
 first_stage_drawing_line:
 	mov 	rdx, width 		; width	
 	imul 	rdx, y			; width*y
@@ -246,8 +261,19 @@ first_stage_drawing_line:
 	imul 	rdx, 4			; 4*(width*y + x)
 	add	rdx, rcx
 	
-	VEXTRACTF128 xmm0, vB, 1
-	vcvtps2dq xmm0, xmm0
+	; c = cB + (vE-vB / xE-xB) * (x - xB)
+	vsubps ymm0, ymm15, ymm14 ; (x - xB)
+	VBROADCASTSS ymm0, xmm0
+	vmulps ymm0, ymm13, ymm0 ; (vE-vB / xE-xB) * (x - xB)
+	vaddps ymm0, vB, ymm0 ; cB + (vE-vB / xE-xB) * (x - xB)
+	VEXTRACTF128 xmm0, ymm0, 1 ; color from vB
+	vcvtps2dq xmm0, xmm0 ; float to integer
+	
+	;VEXTRACTF128 xmm0, vB, 1 ; color from vB
+	;vcvtps2dq xmm0, xmm0
+	
+	;vmovups xmm9, mask
+	
 	pshufb xmm0, mask
 	vmovd [rdx], xmm0
 	;vcvtps2dq xmm0, c1
@@ -260,6 +286,9 @@ first_stage_drawing_line:
 	;mov BYTE[rdx], 0
 	
 	inc x
+	; incrementation of vector
+	VMOVUPS	ymm0, ones
+	VADDPS	ymm15, ymm15, ymm0
 	
 	cmp x, rbx
 	jle first_stage_drawing_line
@@ -328,7 +357,8 @@ second_stage_drawing_line:
 	
 	VEXTRACTF128 xmm0, vB, 1
 	vcvtps2dq xmm0, xmm0
-	pshufb xmm0, mask
+	
+	pshufb xmm0, xmm9
 	vmovd [rdx], xmm0
 		
 	;vcvtps2dq xmm0, c1
@@ -377,8 +407,8 @@ second_stage_drawing_line:
 end:
 
 	; free space - saved arguments
-	; 5 * 8 = 40 bytes (5 registers, rdi, rsi, rdx, rcx, r9 each 8 bytes)
-	add rsp, 40
+	; 6 * 8 = 48 bytes (5 registers, rdi, rsi, rdx, rcx, r8, r9 each 8 bytes)
+	add rsp, 48
 	
 	; loading saved registers rbp, rsp, rbx, r12, r13, r14, r15
 	pop r15
