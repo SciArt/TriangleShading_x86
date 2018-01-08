@@ -187,7 +187,7 @@ int main()
 	verticles[0].w = 1;
 	verticles[0].r = 255;
 	verticles[0].g = 0;
-	verticles[0].b = 255;
+	verticles[0].b = 0;
 	verticles[0].a = 255;
 
 	verticles[1].x = 150;

@@ -30,6 +30,8 @@ x86_function:
 	%define width [rbp-72]
 	%define height [rbp-80]
 
+	vzeroall ; assigning zero to all ymm registers
+
 	;mov r9, vertices
 	;vmovups xmm10, [r9+16] ; color from the v1
 	;vcvtps2dq xmm10, xmm10 ; converting to integers
@@ -37,9 +39,14 @@ x86_function:
 	;vmovups xmm11, [r8]
 	;pshufb xmm10, xmm11
 	
+	vmovups	xmm9, [r8] ; mask
+	%define mask xmm9
 ;------------------------------------------------------------------------------	
 
 	; [0.0]	loading vertices
+	
+	; vertice looks like [x][y][z][w][r][g][b][a], 
+	; each element 4 bytes (32 bits) float value
 	
 	mov	r9, vertices	; pointer to vertices
 	
@@ -53,6 +60,8 @@ x86_function:
 	; v3
 	mov	r12, r9
 	add	r12, 64	
+	
+	; y coordinates
 	
 	vmovups		ymm1, [r10+4]	; v1, but begin from y
 	vcvtss2si	r13, xmm1		; v1.y
@@ -117,18 +126,72 @@ check_v2_v3:
 
 sort_end:
 ;------------------------------------------------------------------------------
+	; x coordinates
+	vmovups		ymm1, [r10]		; v1, begin from [x]	
+	vmovups		ymm2, [r11]		; v2, begin from [x]	
+	vmovups		ymm3, [r12]		; v3, begin from [x]
 	
-	; [2.0]	if v1.y is equal v3.y jump to the END
+	; coordinates
+	; r13, r14, r15 = y1, y2, y3
 	
-	; [2.1]	calculating differences d13 (v1, v3)
+	; colors
+	; xmm10, xmm11, xmm12 = v1.rgba, v2.rgba, v3.rgba
 	
-	; [2.2]	begin and end vertex = v1
-		
+	%define v1 ymm1
+	%define v2 ymm2
+	%define v3 ymm3
+	
+	%define y1 r13
+	%define y2 r14
+	%define y3 r15
 ;------------------------------------------------------------------------------
 	
+	; [2.0]	if v1.y is equal v3.y jump to the END
+	cmp	y1, y3
+	je		end
+	
+	%define vB ymm4 ; v begin
+	%define vE ymm5 ; v end
+	%define d13 ymm6
+	%define d12 ymm7
+	%define d23 ymm8
+	
+	; [2.1]	calculating differences d13 (v1, v3)
+	; v3 - v1
+	vsubps d13, v3, v1
+	
+	; y3 - y1
+	mov rax, y3
+	sub rax, y1
+	push rax
+	VBROADCASTSS ymm0, DWORD[rdi+8] ; filling vector with lower 32 bits of rax
+	pop rax
+	
+	vdivps d13, d13, ymm0 ; v3-v1 / y3-y1
+	
+	; [2.2]	begin and end vertex = v1
+	VMOVUPS vB, v1
+	VMOVUPS vE, v1
+	
+;------------------------------------------------------------------------------
+first_stage:
+
 	; [3.0]	if v1.y is equal v2.y jump to [4.0]
+	cmp	y1, y2
+	je		second_stage
 	
 	; [3.1]	calculating differences d12 (v1, v2)
+	; v2 - v1
+	vsubps d12, v2, v1
+	
+	; y2 - y1
+	mov rax, y2
+	sub rax, y1
+	push rax
+	VBROADCASTSS ymm0, DWORD[rdi+8] ; filling vector with lower 32 bits of rax
+	pop rax
+	
+	vdivps d12, d12, ymm0 ; v2-v1 / y2-y1
 	
 	; [3.2]	FIRST STAGE of drawing
 	
@@ -136,8 +199,11 @@ sort_end:
 	; 		[3.3.0]	draw a line from begin to end
 	;		[3.3.1]	calculate next line begin and end
 ;------------------------------------------------------------------------------
-	
+second_stage:
+
 	; [4.0]	if v2.y is equal to v3.y jump to the END
+	cmp	y2, y3
+	je		end
 	
 	; [4.1]	calculating differences d23 (v2, v3)
 	
@@ -149,28 +215,29 @@ sort_end:
 	
 ;------------------------------------------------------------------------------
 	
-	vmovups		xmm1, [r10]
-	vcvtss2si	rcx, xmm1
-	mov	rax, rcx
-	imul	rax, 4
+	;mov	rax, x1
+	;imul	rax, 4
 	
 	;vcvtss2si	rcx, xmm2
 	;mov	rbx, rcx
 	
-	mov	rbx, pixels
-	sub	rax, 1
-loop:
+	;mov	rbx, pixels
+	;sub	rax, 1
+;loop:
 	;mov	BYTE[rbx], 0
-	vmovd [rbx], xmm10
-	add	rbx, 4
-	sub	rax, 4
-	cmp	rax, 0
-	jnle	loop
+	;vcvtps2dq xmm4, c1
+	;pshufb xmm4, mask
+	;vmovd [rbx], xmm4
+	;add	rbx, 4
+	;sub	rax, 4
+	;cmp	rax, 0
+	;jnle	loop
 	
 ;------------------------------------------------------------------------------	
+end:
 	; free space - saved arguments
 	; 5 * 8 = 40 bytes (5 registers, rdi, rsi, rdx, rcx, r9 each 8 bytes)
-	sub rsp, 40
+	add rsp, 40
 	
 	; loading saved registers rbp, rsp, rbx, r12, r13, r14, r15
 	pop r15
@@ -179,7 +246,7 @@ loop:
 	pop r12
 	pop rbx
 	pop rsp
-end:
+
 ;------------------------------------------------------------------------------
 	mov 	rsp, rbp		; restore original stack pointer
 	pop 	rbp			; restore "calling procedure" frame pointer
