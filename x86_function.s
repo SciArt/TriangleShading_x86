@@ -242,7 +242,6 @@ first_stage_loop:
 	vdivps ymm13, ymm13, ymm0 ; vE-vB / xE-xB
 	
 	; checking vB.x < vE.x
-	VMOVUPS	ymm14, vB ; ymm14 is for xB
 	VMOVUPS	ymm15, vB ; ymm15 is for current x
 	mov	x, rax
 	cmp	rax, rbx
@@ -250,7 +249,6 @@ first_stage_loop:
 	mov	x, rbx
 	mov	rbx, rax
 	mov	rax, x
-	VMOVUPS	ymm14, vE ; ymm14 is for xB
 	VMOVUPS	ymm15, vE ; ymm15 is for current x
 	; x=rax is lower then rbx ; rax = vB ; rbx = vE	
 
@@ -262,11 +260,8 @@ first_stage_drawing_line:
 	add	rdx, rcx
 	
 	; c = cB + (vE-vB / xE-xB) * (x - xB)
-	vsubps ymm0, ymm15, ymm14 ; (x - xB)
-	VBROADCASTSS ymm0, xmm0
-	vmulps ymm0, ymm13, ymm0 ; (vE-vB / xE-xB) * (x - xB)
-	vaddps ymm0, vB, ymm0 ; cB + (vE-vB / xE-xB) * (x - xB)
-	VEXTRACTF128 xmm0, ymm0, 1 ; color from vB
+	
+	VEXTRACTF128 xmm0, ymm15, 1 ; color from current v
 	vcvtps2dq xmm0, xmm0 ; float to integer
 	
 	;VEXTRACTF128 xmm0, vB, 1 ; color from vB
@@ -286,9 +281,8 @@ first_stage_drawing_line:
 	;mov BYTE[rdx], 0
 	
 	inc x
-	; incrementation of vector
-	VMOVUPS	ymm0, ones
-	VADDPS	ymm15, ymm15, ymm0
+	; incrementation of vector / shifting color
+	VADDPS	ymm15, ymm15, ymm13
 	
 	cmp x, rbx
 	jle first_stage_drawing_line
@@ -303,7 +297,6 @@ first_stage_drawing_line:
 	jle first_stage_loop
 ;------------------------------------------------------------------------------
 second_stage:
-
 	VMOVUPS vE, v2
 
 	; [4.0]	if v2.y is equal to v3.y jump to the END
@@ -338,14 +331,23 @@ second_stage_loop:
 	vcvtss2si	rbx, xmm5 ; VE
 	
 	mov 	rcx, pixels
+	; for linear interpolation
+	VMOVUPS	ymm14, vB
+	VMOVUPS	ymm15, vE
+	
+	vsubps ymm13, ymm15, ymm14 ; vE - vB
+	VBROADCASTSS ymm0, xmm13 ; xE - xB
+	vdivps ymm13, ymm13, ymm0 ; vE-vB / xE-xB	
 	
 	; checking vB.x < vE.x
+	VMOVUPS	ymm15, vB ; ymm15 is for current x
 	mov	x, rax
 	cmp	rax, rbx
 	jle	second_stage_drawing_line
 	mov	x, rbx
 	mov	rbx, rax
 	mov	rax, x
+	VMOVUPS	ymm15, vE ; ymm15 is for current x
 	; x=rax is lower then rbx
 	
 second_stage_drawing_line:
@@ -355,10 +357,10 @@ second_stage_drawing_line:
 	imul 	rdx, 4			; 4*(width*y + x)
 	add	rdx, rcx
 	
-	VEXTRACTF128 xmm0, vB, 1
-	vcvtps2dq xmm0, xmm0
+	VEXTRACTF128 xmm0, ymm15, 1 ; color from current v
+	vcvtps2dq xmm0, xmm0 ; float to integer
 	
-	pshufb xmm0, xmm9
+	pshufb xmm0, mask
 	vmovd [rdx], xmm0
 		
 	;vcvtps2dq xmm0, c1
@@ -371,6 +373,8 @@ second_stage_drawing_line:
 	;mov BYTE[rdx], 0
 	
 	inc x
+	; incrementation of vector / shifting color
+	VADDPS	ymm15, ymm15, ymm13	
 	
 	cmp x, rbx
 	jle second_stage_drawing_line
@@ -380,6 +384,7 @@ second_stage_drawing_line:
 	VADDPS	vE, vE, d23	
 	
 	inc	y
+		
 	; contiune if y <= y3
 	cmp	y, y3
 	jle second_stage_loop	

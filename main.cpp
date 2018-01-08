@@ -14,6 +14,7 @@ using get_time = std::chrono::steady_clock;
 
 int width = 1000;
 int height = 600;
+const int delta_ratio = 10.0;
 
 struct verticle
 {
@@ -221,14 +222,14 @@ int main()
 	
 	auto start = get_time::now();
 	
-	while (window.isOpen())
+	while( window.isOpen() )
 	{		
 		sf::Event event;
-		while (window.pollEvent(event))
+		while( window.pollEvent(event) )
 		{
-			if (event.type == sf::Event::Closed)
+			if( event.type == sf::Event::Closed )
 				window.close();
-			if (event.type == sf::Event::Resized)
+			if( event.type == sf::Event::Resized )
 			{
 				width = window.getSize().x;
 				height = window.getSize().y;
@@ -243,6 +244,115 @@ int main()
 				sprite = new sf::Sprite;
 				sprite->setTexture(texture);
 				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));;
+			}
+			if( event.type == sf::Event::MouseWheelScrolled )
+			{
+				if( sf::Keyboard::isKeyPressed(sf::Keyboard::Num1) )
+				{
+					if( sf::Keyboard::isKeyPressed(sf::Keyboard::R) )
+					{
+						verticles[0].r += event.mouseWheelScroll.delta*delta_ratio;
+						if( verticles[0].r > 255.0 )
+							verticles[0].r = 255.0;
+						else if( verticles[0].r < 0.0 )
+							verticles[0].r = 0.0;
+					}
+					if( sf::Keyboard::isKeyPressed(sf::Keyboard::G) )
+					{
+						verticles[0].g += event.mouseWheelScroll.delta*delta_ratio;
+						if( verticles[0].g > 255.0 )
+							verticles[0].g = 255.0;
+						else if( verticles[0].g < 0.0 )
+							verticles[0].g = 0.0;
+					}
+					if( sf::Keyboard::isKeyPressed(sf::Keyboard::B) )
+					{
+						verticles[0].b += event.mouseWheelScroll.delta*delta_ratio;
+						if( verticles[0].b > 255.0 )
+							verticles[0].b = 255.0;
+						else if( verticles[0].b < 0.0 )
+							verticles[0].b = 0.0;
+					}
+					if( sf::Keyboard::isKeyPressed(sf::Keyboard::A) )
+					{
+						verticles[0].a += event.mouseWheelScroll.delta*delta_ratio;
+						if( verticles[0].a > 255.0 )
+							verticles[0].a = 255.0;
+						else if( verticles[0].a < 0.0 )
+							verticles[0].a = 0.0;
+					}
+				}
+				if( sf::Keyboard::isKeyPressed(sf::Keyboard::Num2) )
+				{
+					if( sf::Keyboard::isKeyPressed(sf::Keyboard::R) )
+					{
+						verticles[1].r += event.mouseWheelScroll.delta*delta_ratio;
+						if( verticles[1].r > 255.0 )
+							verticles[1].r = 255.0;
+						else if( verticles[1].r < 0.0 )
+							verticles[1].r = 0.0;
+					}
+					if( sf::Keyboard::isKeyPressed(sf::Keyboard::G) )
+					{
+						verticles[1].g += event.mouseWheelScroll.delta*delta_ratio;
+						if( verticles[1].g > 255.0 )
+							verticles[1].g = 255.0;
+						else if( verticles[1].g < 0.0 )
+							verticles[1].g = 0.0;
+					}
+					if( sf::Keyboard::isKeyPressed(sf::Keyboard::B) )
+					{
+						verticles[1].b += event.mouseWheelScroll.delta*delta_ratio;
+						if( verticles[1].b > 255.0 )
+							verticles[1].b = 255.0;
+						else if( verticles[1].b < 0.0 )
+							verticles[1].b = 0.0;
+					}
+					if( sf::Keyboard::isKeyPressed(sf::Keyboard::A) )
+					{
+						verticles[1].a += event.mouseWheelScroll.delta*delta_ratio;
+						if( verticles[1].a > 255.0 )
+							verticles[1].a = 255.0;
+						else if( verticles[1].a < 0.0 )
+							verticles[1].a = 0.0;
+					}
+				}
+				if( sf::Keyboard::isKeyPressed(sf::Keyboard::Num3) )
+				{
+					if( sf::Keyboard::isKeyPressed(sf::Keyboard::R) )
+					{
+						verticles[2].r += event.mouseWheelScroll.delta*delta_ratio;
+						if( verticles[2].r > 255.0 )
+							verticles[2].r = 255.0;
+						else if( verticles[2].r < 0.0 )
+							verticles[2].r = 0.0;
+					}
+					if( sf::Keyboard::isKeyPressed(sf::Keyboard::G) )
+					{
+						verticles[2].g += event.mouseWheelScroll.delta*delta_ratio;
+						if( verticles[2].g > 255.0 )
+							verticles[2].g = 255.0;
+						else if( verticles[2].g < 0.0 )
+							verticles[2].g = 0.0;
+					}
+					if( sf::Keyboard::isKeyPressed(sf::Keyboard::B) )
+					{
+						verticles[2].b += event.mouseWheelScroll.delta*delta_ratio;
+						if( verticles[2].b > 255.0 )
+							verticles[2].b = 255.0;
+						else if( verticles[2].b < 0.0 )
+							verticles[2].b = 0.0;
+					}
+					if( sf::Keyboard::isKeyPressed(sf::Keyboard::A) )
+					{
+						verticles[2].a += event.mouseWheelScroll.delta*delta_ratio;
+						if( verticles[2].a > 255.0 )
+							verticles[2].a = 255.0;
+						else if( verticles[2].a < 0.0 )
+							verticles[2].a = 0.0;
+					}
+				}
+				
 			}
 		}
 		delete image;
