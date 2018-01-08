@@ -259,7 +259,7 @@ first_stage_drawing_line:
 	inc	y
 	; contiune if y <= y2
 	cmp	y, y2
-	jle first_stage_loop
+	jl first_stage_loop
 ;------------------------------------------------------------------------------
 second_stage:
 	VMOVUPS vE, v2
