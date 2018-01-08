@@ -36,13 +36,6 @@ x86_function:
 	%define ones [rbp-96]
 
 	vzeroall ; assigning zero to all ymm registers
-
-	;mov r9, vertices
-	;vmovups xmm10, [r9+16] ; color from the v1
-	;vcvtps2dq xmm10, xmm10 ; converting to integers
-	
-	;vmovups xmm11, [r8]
-	;pshufb xmm10, xmm11
 	
 	vmovups	xmm9, [r8] ; mask
 	%define mask xmm9
@@ -179,13 +172,6 @@ sort_end:
 	vsubps d13, v3, v1
 	
 	; y3 - y1
-	;mov rax, y3
-	;sub rax, y1
-	;push rax
-	;VBROADCASTSS ymm0, DWORD[rdi+8] ; filling vector with lower 32 bits of rax
-	;VCVTDQ2PS ymm0, ymm0 ; converting integers to floats
-	;pop rax
-	
 	vsubps xmm0, vy3, vy1
 	VBROADCASTSS ymm0, xmm0
 	
@@ -207,13 +193,6 @@ first_stage:
 	vsubps d12, v2, v1
 	
 	; y2 - y1
-	;mov rax, y2
-	;sub rax, y1
-	;push rax
-	;VBROADCASTSS ymm0, DWORD[rdi+8] ; filling vector with lower 32 bits of rax
-	;VCVTDQ2PS ymm0, ymm0 ; converting integers to floats
-	;pop rax
-	
 	vsubps xmm0, vy2, vy1
 	VBROADCASTSS ymm0, xmm0
 	
@@ -262,24 +241,10 @@ first_stage_drawing_line:
 	; c = cB + (vE-vB / xE-xB) * (x - xB)
 	
 	VEXTRACTF128 xmm0, ymm15, 1 ; color from current v
-	vcvtps2dq xmm0, xmm0 ; float to integer
-	
-	;VEXTRACTF128 xmm0, vB, 1 ; color from vB
-	;vcvtps2dq xmm0, xmm0
-	
-	;vmovups xmm9, mask
-	
+	vcvtps2dq xmm0, xmm0 ; float to integer	
 	pshufb xmm0, mask
 	vmovd [rdx], xmm0
-	;vcvtps2dq xmm0, c1
-	;pshufb xmm0, mask
-	;vmovd [rdx], xmm0
-	
-	;add rcx, 100
-	;mov BYTE[rcx], 0
 		
-	;mov BYTE[rdx], 0
-	
 	inc x
 	; incrementation of vector / shifting color
 	VADDPS	ymm15, ymm15, ymm13
@@ -307,21 +272,14 @@ second_stage:
 	; v3 - v2
 	vsubps d23, v3, v2
 	
-	; y3 - y2
-	;mov rax, y3
-	;sub rax, y2
-	;push rax
-	;VBROADCASTSS ymm0, DWORD[rdi+8] ; filling vector with lower 32 bits of rax
-	;VCVTDQ2PS ymm0, ymm0 ; converting integers to floats
-	;pop rax
-	
+	; y3 - y2	
 	vsubps xmm0, vy3, vy2
 	VBROADCASTSS ymm0, xmm0
 	
 	vdivps d23, d23, ymm0 ; v3-v2 / y3-y2
 	
 	; [4.2]	SECOND STAGE of drawing
-	
+	mov y, y2
 	; [4.3]	while( y <= v3.y )
 second_stage_loop:	
 	; 		[4.3.0]	draw a line from begin to end
@@ -359,18 +317,8 @@ second_stage_drawing_line:
 	
 	VEXTRACTF128 xmm0, ymm15, 1 ; color from current v
 	vcvtps2dq xmm0, xmm0 ; float to integer
-	
 	pshufb xmm0, mask
 	vmovd [rdx], xmm0
-		
-	;vcvtps2dq xmm0, c1
-	;pshufb xmm0, mask
-	;vmovd [rdx], xmm0
-	
-	;add rcx, 100
-	;mov BYTE[rcx], 0
-		
-	;mov BYTE[rdx], 0
 	
 	inc x
 	; incrementation of vector / shifting color
@@ -388,25 +336,6 @@ second_stage_drawing_line:
 	; contiune if y <= y3
 	cmp	y, y3
 	jle second_stage_loop	
-;------------------------------------------------------------------------------
-	
-	;mov	rax, x1
-	;imul	rax, 4
-	
-	;vcvtss2si	rcx, xmm2
-	;mov	rbx, rcx
-	
-	;mov	rbx, pixels
-	;sub	rax, 1
-;loop:
-	;mov	BYTE[rbx], 0
-	;vcvtps2dq xmm4, c1
-	;pshufb xmm4, mask
-	;vmovd [rbx], xmm4
-	;add	rbx, 4
-	;sub	rax, 4
-	;cmp	rax, 0
-	;jnle	loop
 	
 ;------------------------------------------------------------------------------	
 end:

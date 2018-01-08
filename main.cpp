@@ -386,7 +386,7 @@ int main()
 		drawGrid( (sf::Uint8*)image->getPixelsPtr() );
 		
 		std::cout << "\033[2J\033[1;1HdrawGrid:         " << std::setw(20) << std::right << (std::chrono::duration_cast<ns>(get_time::now() - start)).count() << " ns\n";
-		
+		std::cout << verticles[0].y << " " << verticles[1].y << " " << verticles[2].y << "\n";
 		start = get_time::now();
 		
 		//data* tmp = new data( verticles, (sf::Uint8*)image->getPixelsPtr(), width, height );
@@ -402,7 +402,6 @@ int main()
 			drawTriangle( (sf::Uint8*)image->getPixelsPtr(), verticles );
 		}	
 		std::cout << "drawTriangleCpp:  " << std::setw(20) << std::right << (std::chrono::duration_cast<ns>(get_time::now() - start)).count() << " ns\n";
-
 		texture.update(*image);
 		
 		window.clear();
