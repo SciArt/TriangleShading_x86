@@ -246,6 +246,10 @@ first_stage_drawing_line:
 	imul 	rdx, 4			; 4*(width*y + x)
 	add	rdx, rcx
 	
+	VEXTRACTF128 xmm0, vB, 1
+	vcvtps2dq xmm0, xmm0
+	pshufb xmm0, mask
+	vmovd [rdx], xmm0
 	;vcvtps2dq xmm0, c1
 	;pshufb xmm0, mask
 	;vmovd [rdx], xmm0
@@ -253,7 +257,7 @@ first_stage_drawing_line:
 	;add rcx, 100
 	;mov BYTE[rcx], 0
 		
-	mov BYTE[rdx], 0
+	;mov BYTE[rdx], 0
 	
 	inc x
 	
@@ -297,9 +301,58 @@ second_stage:
 	; [4.2]	SECOND STAGE of drawing
 	
 	; [4.3]	while( y <= v3.y )
+second_stage_loop:	
 	; 		[4.3.0]	draw a line from begin to end
-	;		[4.3.1]	calculate next line begin and end
 	
+	; loading x values of begin and end
+	vcvtss2si	rax, xmm4 ; vB
+	vcvtss2si	rbx, xmm5 ; VE
+	
+	mov 	rcx, pixels
+	
+	; checking vB.x < vE.x
+	mov	x, rax
+	cmp	rax, rbx
+	jle	second_stage_drawing_line
+	mov	x, rbx
+	mov	rbx, rax
+	mov	rax, x
+	; x=rax is lower then rbx
+	
+second_stage_drawing_line:
+	mov 	rdx, width 		; width	
+	imul 	rdx, y			; width*y
+	add 	rdx, x			; width*y + x
+	imul 	rdx, 4			; 4*(width*y + x)
+	add	rdx, rcx
+	
+	VEXTRACTF128 xmm0, vB, 1
+	vcvtps2dq xmm0, xmm0
+	pshufb xmm0, mask
+	vmovd [rdx], xmm0
+		
+	;vcvtps2dq xmm0, c1
+	;pshufb xmm0, mask
+	;vmovd [rdx], xmm0
+	
+	;add rcx, 100
+	;mov BYTE[rcx], 0
+		
+	;mov BYTE[rdx], 0
+	
+	inc x
+	
+	cmp x, rbx
+	jle second_stage_drawing_line
+	
+	;		[4.3.1]	calculate next line begin and end
+	VADDPS	vB, vB, d13
+	VADDPS	vE, vE, d23	
+	
+	inc	y
+	; contiune if y <= y3
+	cmp	y, y3
+	jle second_stage_loop	
 ;------------------------------------------------------------------------------
 	
 	;mov	rax, x1
