@@ -6,7 +6,7 @@
    Arch: x86_64
    Lang: C++, ASM (Intel syntax)
    Tech: AVX, AVX2
-   Libs: SFML2
+   Libs: SFML 2.4
 
    [FILE]
    
