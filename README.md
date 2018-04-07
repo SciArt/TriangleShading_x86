@@ -11,7 +11,7 @@ Drawing shaded triangle (Gouraud shading). Project is written in two languages: 
 - in order to optimize the program, coordinates and colors are calculated simultaneously (AVX, AVX2)
 
 ## Contact
-If you want to ask me something about this project, feel free to contact me via e-mail: contact@science-artificer.com
+If you want to ask me something about this project, feel free to contact me via e-mail: contact@sci-art.net
 
 ## Video
 https://youtu.be/qqHOqkGMuxY
