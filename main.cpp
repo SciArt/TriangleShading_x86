@@ -174,8 +174,8 @@ int main()
 
 	vertex vertices[3];
 
-	vertices[0].x = 10;
-	vertices[0].y = 10;
+	vertices[0].x = 50;
+	vertices[0].y = 50;
 	vertices[0].z = 1;
 	vertices[0].w = 1;
 	vertices[0].r = 255;
@@ -183,8 +183,8 @@ int main()
 	vertices[0].b = 0;
 	vertices[0].a = 255;
 
-	vertices[1].x = 150;
-	vertices[1].y = 300;
+	vertices[1].x = 950;
+	vertices[1].y = 200;
 	vertices[1].z = 1;
 	vertices[1].w = 1;
 	vertices[1].r = 0;
@@ -192,8 +192,8 @@ int main()
 	vertices[1].b = 0;
 	vertices[1].a = 255;
 
-	vertices[2].x = 300;
-	vertices[2].y = 50;
+	vertices[2].x = 450;
+	vertices[2].y = 550;
 	vertices[2].z = 1;
 	vertices[2].w = 1;
 	vertices[2].r = 0;
@@ -212,7 +212,15 @@ int main()
 	sprite->setTexture(texture);
 	
 	auto start = get_time::now();
+	
 	auto time_asm = (std::chrono::duration_cast<ns>(get_time::now()-start)).count();
+	
+	auto all_time_asm = time_asm;
+	auto display_time_asm = all_time_asm;
+	
+	const int number_of_samples = 500;
+	int current_numeber_of_samples = 1;	
+	
 	auto time_cpp = time_asm;
 	auto time_grid = time_cpp;
 	
@@ -400,6 +408,20 @@ int main()
 		x86_function( vertices, (sf::Uint8*)image->getPixelsPtr(), width, height, mask );
 		
 		time_asm = (std::chrono::duration_cast<ns>(get_time::now() - start)).count();
+		
+		if( current_numeber_of_samples < number_of_samples )
+		{
+			++current_numeber_of_samples;
+			all_time_asm += time_asm;
+		}
+		else
+		{
+			display_time_asm = all_time_asm/number_of_samples;
+			current_numeber_of_samples = 0;
+			all_time_asm = 0; 
+		}
+		
+
 		//------------------------------------------------------------------------
 		start = get_time::now();
 		
@@ -411,7 +433,7 @@ int main()
 
 		// Time of drawing
 		std::cout << "\033[2J\033[1;1HdrawGrid:         " << std::setw(20) << std::right << time_grid << " ns\n";
-		std::cout << "drawTriangle_asm: " << std::setw(20) << std::right << time_asm << " ns\n";
+		std::cout << "drawTriangle_asm: " << std::setw(20) << std::right << display_time_asm << " ns\n";
 		std::cout << "drawTriangle_cpp: " << std::setw(20) << std::right << time_cpp << " ns\n";
 		
 		texture.update(*image);

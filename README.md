@@ -10,6 +10,16 @@ Drawing shaded triangle (Gouraud shading). Project is written in two languages: 
 - floating point numbers were used for calculations 
 - in order to optimize the program, coordinates and colors are calculated simultaneously (AVX, AVX2)
 
+## Build instructions
+
+- SFML
+`sudo apt-get install libsfml-dev`
+- NASM
+`sudo apt-get install nasm`
+
+To build project:
+`make`
+
 ## Contact
 If you want to ask me something about this project, feel free to contact me via e-mail: contact@sci-art.net
 

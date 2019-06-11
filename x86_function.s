@@ -254,8 +254,10 @@ first_stage_drawing_line:
    mov            rdx, width           ; width   
    imul           rdx, y               ; width*y
    add            rdx, x               ; width*y + x
-   imul           rdx, 4               ; 4*(width*y + x)
+   shl            rdx, 2               ; 4*(width*y + x)
    add            rdx, rcx
+
+first_stage_drawing_line_reduced:
    
    vextractf128   xmm0, ymm15, 1       ; color from current v
    vcvtps2dq      xmm0, xmm0           ; float to integer   
@@ -265,8 +267,10 @@ first_stage_drawing_line:
    inc            x                    ; increment current x
    vaddps         ymm15, ymm15, ymm13  ; adding color change
    
+   add            rdx, 4
+
    cmp            x, rbx               ; compare current x with vE.x
-   jle            first_stage_drawing_line
+   jle            first_stage_drawing_line_reduced
    
    ; [3.3.1]   calculate next line begin and end
    vaddps         vB, vB, d13
@@ -328,9 +332,10 @@ second_stage_drawing_line:
    mov            rdx, width           ; width   
    imul           rdx, y               ; width*y
    add            rdx, x               ; width*y + x
-   imul           rdx, 4               ; 4*(width*y + x)
+   shl            rdx, 2               ; 4*(width*y + x)
    add            rdx, rcx
    
+second_stage_drawing_line_reduced:
    vextractf128   xmm0, ymm15, 1       ; extracting color from current v
    vcvtps2dq      xmm0, xmm0           ; float to integer
    pshufb         xmm0, mask           ; shuffle lower bytes to the beginning
@@ -339,8 +344,10 @@ second_stage_drawing_line:
    inc            x                    ; incrementing current x
    vaddps         ymm15, ymm15, ymm13  ; adding color change
    
+   add            rdx, 4
+
    cmp            x, rbx               ; compare current x with vE.x
-   jle            second_stage_drawing_line
+   jle            second_stage_drawing_line_reduced
    
    ; [4.3.1]   calculate next line begin and end
    vaddps         vB, vB, d13
